@@ -1,6 +1,7 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const bp = require('body-parser');
 const express = require('express');
+const jwt = require('jsonwebtoken');
 
 const sequelize = new Sequelize(
   'postgres://postgres:2002@localhost:5432/project',
@@ -52,9 +53,8 @@ app.post('/login', (req, res) => {
     )
     .then((data) => {
       if (data[0].length !== 0) {
-        res.json(true);
-      } else {
-        res.json(false);
+        const token = jwt.sign({ username, password }, 'secretkey');
+        res.json(token);
       }
     })
     .catch((err) => {
