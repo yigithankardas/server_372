@@ -30,6 +30,10 @@ const Auth = sequelize.define(
       type: DataTypes.STRING(50),
       allowNull: false,
     },
+    type: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
   },
   {
     timestamps: false,
@@ -52,9 +56,10 @@ app.post('/login', (req, res) => {
       `select * from auth where username='${username}' and password='${password}'`
     )
     .then((data) => {
-      if (data[0].length !== 0) {
+      const [result] = data[0];
+      if (result !== undefined) {
         const token = jwt.sign({ username, password }, 'secretkey');
-        res.json(token);
+        res.json({ token: token, type: result.type });
       }
     })
     .catch((err) => {
