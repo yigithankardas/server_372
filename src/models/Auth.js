@@ -23,7 +23,7 @@ const Auth = db.define(
   },
   {
     timestamps: false,
-  }
+  },
 );
 
-modeule.exports = Auth;
+module.exports = Auth;

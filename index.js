@@ -2,6 +2,7 @@ const bp = require('body-parser');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('./src/db');
+
 const app = express();
 
 app.use(bp.json());
@@ -14,7 +15,7 @@ app.get('/api', (req, res) => {
 app.get('/ilaclarim', (req, res) => {
   const { TCNo } = req.body;
   db.query(
-    `select * from KULLANICI as U, KULLANIR as K, ILAC as I where U.TCNo='${TCNo}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`
+    `select * from KULLANICI as U, KULLANIR as K, ILAC as I where U.TCNo='${TCNo}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -23,27 +24,26 @@ app.get('/ilaclarim', (req, res) => {
 app.get('/asilarim', (req, res) => {
   const { TCNo } = req.body;
   db.query(
-    `select * from KULLANICI as K, ASI as S, YAPTIRIR as Y where K.TCNo = '${TCNo}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`
+    `select * from KULLANICI as K, ASI as S, YAPTIRIR as Y where K.TCNo = '${TCNo}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
   ).then((data) => {
     res.json(data[0]);
   });
 });
 
-app.get("/randevularim", (req, res) => {
-  const { TCNo } = req.body;
+app.get('/randevularim', (req, res) => {
   db.query(
-    `Select * from HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D where K.TCNo = '00000000000' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`
+    'Select * from HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D where K.TCNo = \'00000000000\' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;',
   ).then((data) => {
     res.json(data[0]);
   });
 });
 
-app.get("/profilim", (req, res) => {
+app.get('/profilim', (req, res) => {
   const { TCNo } = req.body;
   db.query(`Select * from KULLANICI as K where K.TCNo = '${TCNo}'`).then(
     (data) => {
       res.json(data[0]);
-    }
+    },
   );
 });
 
@@ -54,7 +54,7 @@ app.post('/login', (req, res) => {
       const [result] = data[0];
       if (result !== undefined) {
         const token = jwt.sign({ TCNo, Sifre }, 'secretkey');
-        res.json({ token: token, type: result.type });
+        res.json({ token, type: result.type });
       } else {
         res.status(404).json();
       }
