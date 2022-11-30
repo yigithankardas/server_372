@@ -29,12 +29,23 @@ app.get("/asilarim", (req, res) => {
   });
 });
 
-// app.get("/randevularim", (req, res) => {
-//   const { TCNo } = req.body;
-//   db.query(``).then((data) => {
-//     res.json(data[0]);
-//   });
-// });
+app.get("/randevularim", (req, res) => {
+  const { TCNo } = req.body;
+  db.query(
+    `Select * from HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D where K.TCNo = '00000000000' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`
+  ).then((data) => {
+    res.json(data[0]);
+  });
+});
+
+app.get("/profilim", (req, res) => {
+  const { TCNo } = req.body;
+  db.query(`Select * from KULLANICI as K where K.TCNo = '${TCNo}'`).then(
+    (data) => {
+      res.json(data[0]);
+    }
+  );
+});
 
 app.post("/login", (req, res) => {
   const { TCNo, Sifre } = req.body;
