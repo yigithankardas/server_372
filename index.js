@@ -11,9 +11,34 @@ app.get('/api', (req, res) => {
   res.json('Hello World!');
 });
 
+app.get('/ilaclarim', (req, res) => {
+  const { TCNo } = req.body;
+  db.query(
+    `select * from KULLANICI as U, KULLANIR as K, ILAC as I where U.TCNo='${TCNo}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`
+  ).then((data) => {
+    res.json(data[0]);
+  });
+});
+
+app.get('/asilarim', (req, res) => {
+  const { TCNo } = req.body;
+  db.query(
+    `select * from KULLANICI as K, ASI as S, YAPTIRIR as Y where K.TCNo = '${TCNo}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`
+  ).then((data) => {
+    res.json(data[0]);
+  });
+});
+
+// app.get("/randevularim", (req, res) => {
+//   const { TCNo } = req.body;
+//   db.query(``).then((data) => {
+//     res.json(data[0]);
+//   });
+// });
+
 app.post('/login', (req, res) => {
   const { TCNo, Sifre } = req.body;
-  db.query(`select * from kullanici where TCNo='${TCNo}' and Sifre='${Sifre}'`)
+  db.query(`select * from Kullanici where TCNo='${TCNo}' and Sifre='${Sifre}'`)
     .then((data) => {
       const [result] = data[0];
       if (result !== undefined) {
