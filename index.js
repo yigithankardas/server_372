@@ -195,10 +195,37 @@ app.put('/profilim', (req, res) => {
       },
     );
   }
-
 });
 
+// Body'de TCsi verilen kullanicinin ID'si verilen Ilaci silinir
+app.delete('/ilaclarim', (req, res) => {
+  const { TCNo, IlacId } = req.body;
+  db.query(`Delete From KULLANIR Where TCNo='${TCNo}' and IlacId='${IlacId}'`).then(
+    (data) => {
+      res.json(data[0]);
+    },
+  );
+});
 
+// Body'de TCsi verilen kullanicinin ID'si verilen asisi silinir
+app.delete('/asilarim', (req, res) => {
+  const { TCNo, AsiId } = req.body;
+  db.query(`Delete From YAPTIRIR Where TCNo='${TCNo}' and AsiId='${AsiId}'`).then(
+    (data) => {
+      res.json(data[0]);
+    },
+  );
+});
+
+// Body'de TCsi verilen kullanicinin DoktorTC'si ve Tarihi verilen randevu silinir
+app.delete('/randevularim', (req, res) => {
+  const { KullaniciTc, DoktorTc, Tarih } = req.body;
+  db.query(`Delete From RANDEVU Where KullaniciTc='${KullaniciTc}' and DoktorTc='${DoktorTc}' and Tarih='${Tarih}'`).then(
+    (data) => {
+      res.json(data[0]);
+    },
+  );
+});
 
 app.post('/login', (req, res) => {
   const { TCNo, Sifre } = req.body;
