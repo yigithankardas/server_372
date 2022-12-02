@@ -63,9 +63,10 @@ app.get('/api/hastaneler', (req, res) => {
 
 // body'de TCsi verilen kullanicinin ilaclarinin doner
 app.get('/ilaclarim', (req, res) => {
-  const { TCNo } = req.body;
+  console.log(req.query);
+  const { tcno } = req.query;
   db.query(
-    `Select * From KULLANICI as U, KULLANIR as K, ILAC as I Where U.TCNo='${TCNo}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`,
+    `Select * From KULLANICI as U, KULLANIR as K, ILAC as I Where U.TCNo='${tcno}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -234,7 +235,7 @@ app.post('/login', (req, res) => {
       const [result] = data[0];
       if (result !== undefined) {
         const token = jwt.sign({ TCNo, Sifre }, 'secretkey');
-        res.json({ token, type: result.type });
+        res.json({ ...result, token });
       } else {
         res.status(404).json();
       }
