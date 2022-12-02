@@ -63,7 +63,6 @@ app.get('/api/hastaneler', (req, res) => {
 
 // body'de TCsi verilen kullanicinin ilaclarinin doner
 app.get('/ilaclarim', (req, res) => {
-  console.log(req.query);
   const { tcno } = req.query;
   db.query(
     `Select * From KULLANICI as U, KULLANIR as K, ILAC as I Where U.TCNo='${tcno}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`,
