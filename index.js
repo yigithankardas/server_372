@@ -43,7 +43,7 @@ app.get('/api/doktorlar', (req, res) => {
   }
 });
 
-// tum ilaclari doner
+// tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
     'Select * From ASI',
@@ -106,17 +106,16 @@ app.get('/profilim', (req, res) => {
 // Eger body'de siklik verildiyse,
 // Kullaniciya yeni ilac ekler
 app.put('/ilaclarim', (req, res) => {
-  const { TCNo, IlacId, KullanmaSayisi, Siklik } = req.body;
-
-  if (Siklik === undefined) {
-    db.query(`Update KULLANIR Set KullanmaSayisi='${KullanmaSayisi}' From KULLANICI as U, Ilac As I Where U.TCNo = '${TCNo}' and U.TCNo = KULLANIR.TCNo and I.IlacId = '${IlacId}' and I.IlacId = KULLANIR.IlacId;
+  const { tcno, ilacid, kullanmasayisi, siklik } = req.body;
+  if (siklik === undefined) {
+    db.query(`Update KULLANIR Set KullanmaSayisi='${kullanmasayisi}' From KULLANICI as U, Ilac As I Where U.TCNo = '${tcno}' and U.TCNo = KULLANIR.TCNo and I.IlacId = '${ilacid}' and I.IlacId = KULLANIR.IlacId;
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Insert Into KULLANIR Values('${TCNo}','${IlacId}','${Siklik}',0);
+    db.query(`Insert Into KULLANIR Values('${tcno}','${ilacid}','${siklik}',0);
   `).then(
       (data) => {
         res.json(data[0]);
