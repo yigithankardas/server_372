@@ -8,8 +8,6 @@ const db = require('./src/db');
 
 const app = express();
 
-// osman
-
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
@@ -83,11 +81,20 @@ app.get('/asilarim', (req, res) => {
 
 // body'de TCsi verilen kullanicinin randevularini doner
 app.get('/randevularim', (req, res) => {
-  const { TCNo } = req.body;
+  const { tcno } = req.query;
   db.query(
-    `Select * From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D Where K.TCNo = '${TCNo}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`,
+    `Select * From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D Where K.TCNo = '${tcno}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`,
   ).then((data) => {
-    res.json(data[0]);
+    const rows = data[0];
+    const newRows = Promise.all(rows.map(async (row) => {
+      await db.query(`select ad from KULLANICI where TCNo = '${row.doktortc}'`).then((data2) => {
+      /* eslint-disable prefer-destructuring */
+      /* eslint-disable no-param-reassign */
+        row.doktorad = data2[0][0].ad;
+      });
+      return row;
+    }));
+    newRows.then((a) => { res.json(a); });
   });
 });
 
