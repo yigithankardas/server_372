@@ -73,7 +73,7 @@ app.get('/ilaclarim', (req, res) => {
 
 // body'de TCsi verilen kullanicinin asilarini doner
 app.get('/asilarim', (req, res) => {
-  const { TCNo } = req.body;
+  const { TCNo } = req.query;
   db.query(
     `Select * From KULLANICI as K, ASI as S, YAPTIRIR as Y Where K.TCNo = '${TCNo}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
   ).then((data) => {
