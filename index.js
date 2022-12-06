@@ -43,7 +43,7 @@ app.get('/api/doktorlar', (req, res) => {
   }
 });
 
-// tum ilaclari doner
+// tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
     'Select * From ASI',
@@ -83,11 +83,20 @@ app.get('/asilarim', (req, res) => {
 
 // body'de TCsi verilen kullanicinin randevularini doner
 app.get('/randevularim', (req, res) => {
-  const { TCNo } = req.body;
+  const { tcno } = req.query;
   db.query(
-    `Select * From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D Where K.TCNo = '${TCNo}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`,
+    `Select * From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D Where K.TCNo = '${tcno}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`,
   ).then((data) => {
-    res.json(data[0]);
+    const rows = data[0];
+    const newRows = Promise.all(rows.map(async (row) => {
+      await db.query(`select ad from KULLANICI where TCNo = '${row.doktortc}'`).then((data2) => {
+      /* eslint-disable prefer-destructuring */
+      /* eslint-disable no-param-reassign */
+        row.doktorad = data2[0][0].ad;
+      });
+      return row;
+    }));
+    newRows.then((a) => { res.json(a); });
   });
 });
 
@@ -106,17 +115,16 @@ app.get('/profilim', (req, res) => {
 // Eger body'de siklik verildiyse,
 // Kullaniciya yeni ilac ekler
 app.put('/ilaclarim', (req, res) => {
-  const { TCNo, IlacId, KullanmaSayisi, Siklik } = req.body;
-
-  if (Siklik === undefined) {
-    db.query(`Update KULLANIR Set KullanmaSayisi='${KullanmaSayisi}' From KULLANICI as U, Ilac As I Where U.TCNo = '${TCNo}' and U.TCNo = KULLANIR.TCNo and I.IlacId = '${IlacId}' and I.IlacId = KULLANIR.IlacId;
+  const { tcno, ilacid, kullanmasayisi, siklik } = req.body;
+  if (siklik === undefined) {
+    db.query(`Update KULLANIR Set KullanmaSayisi='${kullanmasayisi}' From KULLANICI as U, Ilac As I Where U.TCNo = '${tcno}' and U.TCNo = KULLANIR.TCNo and I.IlacId = '${ilacid}' and I.IlacId = KULLANIR.IlacId;
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Insert Into KULLANIR Values('${TCNo}','${IlacId}','${Siklik}',0);
+    db.query(`Insert Into KULLANIR Values('${tcno}','${ilacid}','${siklik}',0);
   `).then(
       (data) => {
         res.json(data[0]);
