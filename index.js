@@ -8,7 +8,7 @@ const db = require('./src/db');
 
 const app = express();
 
-// hira
+// yigithan
 
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
@@ -73,9 +73,9 @@ app.get('/ilaclarim', (req, res) => {
 
 // body'de TCsi verilen kullanicinin asilarini doner
 app.get('/asilarim', (req, res) => {
-  const { TCNo } = req.query;
+  const { tcno } = req.query;
   db.query(
-    `Select * From KULLANICI as K, ASI as S, YAPTIRIR as Y Where K.TCNo = '${TCNo}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
+    `Select * From KULLANICI as K, ASI as S, YAPTIRIR as Y Where K.TCNo = '${tcno}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -138,17 +138,17 @@ app.put('/ilaclarim', (req, res) => {
 // Eger bodyde yapilma tarihi verildiyse
 // Body'de tc si verilen kullanicinin kullandigi asinin yapilma tarihini gunceller
 app.put('/asilarim', (req, res) => {
-  const { TCNo, AsiId, YapilmaTarihi } = req.body;
+  const { tcno, asiid, YapilmaTarihi } = req.body;
 
   if (YapilmaTarihi === undefined) {
-    db.query(`INSERT INTO YAPTIRIR VALUES('${TCNo}','${AsiId}',NULL);
+    db.query(`INSERT INTO YAPTIRIR VALUES('${tcno}','${asiid}',NULL);
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Update Yaptirir Set YapilmaTarihi='${YapilmaTarihi}' From KULLANICI as U, ASI as A Where U.TCNo = '${TCNo}' and U.TCNo = Yaptirir.TCNo and A.AsiId = '${AsiId}' and A.AsiId = YAPTIRIR.AsiId;
+    db.query(`Update Yaptirir Set YapilmaTarihi='${YapilmaTarihi}' From KULLANICI as U, ASI as A Where U.TCNo = '${tcno}' and U.TCNo = Yaptirir.TCNo and A.AsiId = '${asiid}' and A.AsiId = YAPTIRIR.AsiId;
 `).then(
       (data) => {
         res.json(data[0]);
@@ -217,8 +217,8 @@ app.delete('/ilaclarim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin ID'si verilen asisi silinir
 app.delete('/asilarim', (req, res) => {
-  const { TCNo, AsiId } = req.body;
-  db.query(`Delete From YAPTIRIR Where TCNo='${TCNo}' and AsiId='${AsiId}'`).then(
+  const { TCNo, asiid } = req.body;
+  db.query(`Delete From YAPTIRIR Where TCNo='${TCNo}' and AsiId='${asiid}'`).then(
     (data) => {
       res.json(data[0]);
     },
