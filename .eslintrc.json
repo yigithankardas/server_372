@@ -13,6 +13,10 @@
     },
     "rules": {
         "linebreak-style": 0,
-        "no-console": "off"
+        "no-console": "off",
+        "object-curly-newline": "off",
+        "camelcase": "off",
+        "prefer-destructuring": "off",
+        "no-param-reassign": "off"
     }
 }
