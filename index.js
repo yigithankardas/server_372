@@ -181,7 +181,6 @@ app.put('/asilarim', (req, res) => {
 // Verilen TCler tarih ve Randevu ismi ile yeni Randevu olusturulur
 app.put('/randevularim', (req, res) => {
   const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi } = req.body;
-
   if (randevuismi === undefined) {
     db.query(`
     Update RANDEVU Set Gitti_mi='${gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.TCNo = '${kullanicitc}' and U.TCNo = RANDEVU.KullaniciTc and D.TCNo = RANDEVU.DoktorTc and RANDEVU.Tarih='${tarih}';
@@ -190,7 +189,7 @@ app.put('/randevularim', (req, res) => {
         res.json(data[0]);
       },
     );
-  } else {
+  } else if (randevuismi !== '' && doktortc !== '' && tarih !== '') {
     db.query(`
     INSERT INTO RANDEVU VALUES('${kullanicitc}','${doktortc}','${randevuismi}',0,'${tarih}');
     `).then(
