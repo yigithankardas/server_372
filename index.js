@@ -1,6 +1,3 @@
-/* eslint-disable object-curly-newline */
-/* eslint-disable camelcase */
-
 const bp = require('body-parser');
 const express = require('express');
 const jwt = require('jsonwebtoken');
@@ -35,8 +32,6 @@ app.get('/api/doktorlar', (req, res) => {
       const rows = data[0];
       const newRows = Promise.all(rows.map(async (row) => {
         await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          /* eslint-disable prefer-destructuring */
-          /* eslint-disable no-param-reassign */
           row.doktorad = data2[0][0].ad;
         });
         return row;
@@ -50,8 +45,6 @@ app.get('/api/doktorlar', (req, res) => {
       const rows = data[0];
       const newRows = Promise.all(rows.map(async (row) => {
         await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          /* eslint-disable prefer-destructuring */
-          /* eslint-disable no-param-reassign */
           row.doktorad = data2[0].length !== 0 ? data2[0][0].ad : '';
         });
         return row;
@@ -108,8 +101,6 @@ app.get('/randevularim', (req, res) => {
     const rows = data[0];
     const newRows = Promise.all(rows.map(async (row) => {
       await db.query(`select ad from KULLANICI where TCNo = '${row.doktortc}'`).then((data2) => {
-      /* eslint-disable prefer-destructuring */
-      /* eslint-disable no-param-reassign */
         row.doktorad = data2[0][0].ad;
       });
       return row;
@@ -156,9 +147,8 @@ app.put('/ilaclarim', (req, res) => {
 // Eger bodyde yapilma tarihi verildiyse
 // Body'de tc si verilen kullanicinin kullandigi asinin yapilma tarihini gunceller
 app.put('/asilarim', (req, res) => {
-  const { tcno, asiid, YapilmaTarihi } = req.body;
-
-  if (YapilmaTarihi === undefined) {
+  const { tcno, asiid, yapilmatarihi } = req.body;
+  if (yapilmatarihi === undefined) {
     db.query(`INSERT INTO YAPTIRIR VALUES('${tcno}','${asiid}',NULL);
   `).then(
       (data) => {
@@ -166,13 +156,23 @@ app.put('/asilarim', (req, res) => {
       },
     );
   } else {
-    db.query(`Update Yaptirir Set YapilmaTarihi='${YapilmaTarihi}' From KULLANICI as U, ASI as A Where U.TCNo = '${tcno}' and U.TCNo = Yaptirir.TCNo and A.AsiId = '${asiid}' and A.AsiId = YAPTIRIR.AsiId;
+    db.query(`Update Yaptirir Set YapilmaTarihi='${yapilmatarihi}' From KULLANICI as U, ASI as A Where U.TCNo = '${tcno}' and U.TCNo = Yaptirir.TCNo and A.AsiId = '${asiid}' and A.AsiId = YAPTIRIR.AsiId;
 `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   }
+});
+
+app.post('/asilarim', (req, res) => {
+  const { tcno, asiid, yapilmatarihi } = req.body;
+  db.query(`INSERT INTO YAPTIRIR VALUES('${tcno}','${asiid}', '${yapilmatarihi}');
+  `).then(
+    (data) => {
+      res.json(data[0]);
+    },
+  );
 });
 
 // Eger bodyde RandevuIsmi yoksa
