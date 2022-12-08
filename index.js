@@ -25,18 +25,36 @@ app.get('/api/ilaclar', (req, res) => {
 // Eger HastaneId verildiyse
 // O hastanede calisan doktorlari doner
 app.get('/api/doktorlar', (req, res) => {
-  const { HastaneId } = req.body;
-  if (HastaneId === undefined) {
+  const { hastaneid } = req.query;
+  if (hastaneid === undefined) {
     db.query(
       'Select * From DOKTOR',
     ).then((data) => {
-      res.json(data[0]);
+      const rows = data[0];
+      const newRows = Promise.all(rows.map(async (row) => {
+        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
+          /* eslint-disable prefer-destructuring */
+          /* eslint-disable no-param-reassign */
+          row.doktorad = data2[0][0].ad;
+        });
+        return row;
+      }));
+      newRows.then((a) => { res.json(a); });
     });
   } else {
     db.query(
-      `Select * From DOKTOR where HastaneId = '${HastaneId}'`,
+      `Select * From DOKTOR where HastaneId = '${hastaneid}'`,
     ).then((data) => {
-      res.json(data[0]);
+      const rows = data[0];
+      const newRows = Promise.all(rows.map(async (row) => {
+        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
+          /* eslint-disable prefer-destructuring */
+          /* eslint-disable no-param-reassign */
+          row.doktorad = data2[0].length !== 0 ? data2[0][0].ad : '';
+        });
+        return row;
+      }));
+      newRows.then((a) => { res.json(a); });
     });
   }
 });
@@ -160,11 +178,11 @@ app.put('/asilarim', (req, res) => {
 // Eger bodyde RandevuIsmi varsa
 // Verilen TCler tarih ve Randevu ismi ile yeni Randevu olusturulur
 app.put('/randevularim', (req, res) => {
-  const { KullaniciTc, DoktorTc, Tarih, Gitti_mi, RandevuIsmi } = req.body;
+  const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi } = req.body;
 
-  if (RandevuIsmi === undefined) {
+  if (randevuismi === undefined) {
     db.query(`
-    Update RANDEVU Set Gitti_mi='${Gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.TCNo = '${KullaniciTc}' and U.TCNo = RANDEVU.KullaniciTc and D.TCNo = RANDEVU.DoktorTc and RANDEVU.Tarih='${Tarih}';
+    Update RANDEVU Set Gitti_mi='${gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.TCNo = '${kullanicitc}' and U.TCNo = RANDEVU.KullaniciTc and D.TCNo = RANDEVU.DoktorTc and RANDEVU.Tarih='${tarih}';
   `).then(
       (data) => {
         res.json(data[0]);
@@ -172,7 +190,7 @@ app.put('/randevularim', (req, res) => {
     );
   } else {
     db.query(`
-    INSERT INTO RANDEVU VALUES('${KullaniciTc}','${DoktorTc}','${RandevuIsmi}',0,'${Tarih}');
+    INSERT INTO RANDEVU VALUES('${kullanicitc}','${doktortc}','${randevuismi}',0,'${tarih}');
     `).then(
       (data) => {
         res.json(data[0]);
