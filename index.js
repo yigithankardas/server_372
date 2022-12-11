@@ -19,6 +19,14 @@ app.get('/api/ilaclar', (req, res) => {
   });
 });
 
+// ilacid'si verilen ilaci doner
+app.get('/api/ilac', (req, res) => {
+  const { ilacid } = req.query;
+  db.query(`select * from ILAC where ilacid='${ilacid}'`).then((data) => {
+    res.json(data[0]);
+  });
+});
+
 // Eger HastaneId verilmediyse
 // tum doktorlari doner
 // Eger HastaneId verildiyse
