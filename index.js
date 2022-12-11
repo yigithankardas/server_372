@@ -20,10 +20,10 @@ app.get('/api/ilaclar', (req, res) => {
 });
 
 // ilacid'si verilen ilaci doner
-app.get('/api/ilac', (req, res) => {
+app.get('/kullandigim', (req, res) => {
   const { ilacid } = req.query;
-  db.query(`select * from ILAC where ilacid='${ilacid}'`).then((data) => {
-    res.json(data[0]);
+  db.query(`select * from ILAC as I inner join KULLANIR as KU on I.ilacid = KU.ilacid left join YAZAR as Y on Y.ilacid = I.ilacid where I.ilacid = '${ilacid}'`).then((data) => {
+    res.json(data[0][0]);
   });
 });
 
