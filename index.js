@@ -244,8 +244,8 @@ app.put('/profilim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin ID'si verilen Ilaci silinir
 app.delete('/ilaclarim', (req, res) => {
-  const { TCNo, IlacId } = req.body;
-  db.query(`Delete From KULLANIR Where TCNo='${TCNo}' and IlacId='${IlacId}'`).then(
+  const { tcno, ilacid } = req.query;
+  db.query(`delete From KULLANIR where tcno='${tcno}' and ilacid='${ilacid}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -254,8 +254,8 @@ app.delete('/ilaclarim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin ID'si verilen asisi silinir
 app.delete('/asilarim', (req, res) => {
-  const { TCNo, asiid } = req.body;
-  db.query(`Delete From YAPTIRIR Where TCNo='${TCNo}' and AsiId='${asiid}'`).then(
+  const { tcno, asiid } = req.query;
+  db.query(`delete from YAPTIRIR where tcno='${tcno}' and asiid='${asiid}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -264,8 +264,8 @@ app.delete('/asilarim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin DoktorTC'si ve Tarihi verilen randevu silinir
 app.delete('/randevularim', (req, res) => {
-  const { KullaniciTc, DoktorTc, Tarih } = req.body;
-  db.query(`Delete From RANDEVU Where KullaniciTc='${KullaniciTc}' and DoktorTc='${DoktorTc}' and Tarih='${Tarih}'`).then(
+  const { kullanicitc, doktortc, tarih } = req.query;
+  db.query(`delete from RANDEVU where kullanicitc='${kullanicitc}' and doktortc='${doktortc}' and tarih='${tarih}'`).then(
     (data) => {
       res.json(data[0]);
     },
