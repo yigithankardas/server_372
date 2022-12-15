@@ -117,6 +117,15 @@ app.get('/randevularim', (req, res) => {
   });
 });
 
+// body'de bilgileri veirlen randevuyu doner
+app.get('/randevu', (req, res) => {
+  const { kullanicitc, doktortc, tarih, saat } = req.query;
+  db.query(`select * from RANDEVU where kullanicitc='${kullanicitc}' and doktortc='${doktortc}' and tarih='${tarih}' and saat='${saat}:00'`)
+    .then((data) => {
+      res.json(data[0]);
+    });
+});
+
 // body'de TCsi verilen kullanicinin profil bilgilerini doner
 app.get('/profilim', (req, res) => {
   const { TCNo } = req.body;
@@ -188,18 +197,21 @@ app.post('/asilarim', (req, res) => {
 // Eger bodyde RandevuIsmi varsa
 // Verilen TCler tarih ve Randevu ismi ile yeni Randevu olusturulur
 app.put('/randevularim', (req, res) => {
-  const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi } = req.body;
+  const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi, saat } = req.body;
   if (randevuismi === undefined) {
     db.query(`
-    Update RANDEVU Set Gitti_mi='${gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.TCNo = '${kullanicitc}' and U.TCNo = RANDEVU.KullaniciTc and D.TCNo = RANDEVU.DoktorTc and RANDEVU.Tarih='${tarih}';
+    Update RANDEVU Set gitti_mi='${gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.tcno = '${kullanicitc}' and U.tcno = RANDEVU.kullanicitc and D.TCNo = RANDEVU.doktortc and RANDEVU.tarih='${tarih}' and RANDEVU.saat='${saat}';
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
-  } else if (randevuismi !== '' && doktortc !== '' && tarih !== '') {
+  } else if (randevuismi !== '' && doktortc !== '' && tarih !== '' && saat !== '') {
+    let modifiedTarih = tarih.slice(0, 10);
+    const lastCharacterModified = (parseInt(modifiedTarih.charAt(modifiedTarih.length - 1), 10) + 1).toString();
+    modifiedTarih = modifiedTarih.slice(0, modifiedTarih.length - 1) + lastCharacterModified;
     db.query(`
-    INSERT INTO RANDEVU VALUES('${kullanicitc}','${doktortc}','${randevuismi}',0,'${tarih}');
+    INSERT INTO RANDEVU VALUES('${kullanicitc}','${doktortc}','${randevuismi}',0,'${modifiedTarih}','${saat}');
     `).then(
       (data) => {
         res.json(data[0]);
