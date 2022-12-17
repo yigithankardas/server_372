@@ -5,7 +5,7 @@ const db = require('./src/db');
 
 const app = express();
 
-// yigithan
+// oguz
 
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
@@ -13,16 +13,18 @@ app.use(bp.urlencoded({ extended: true }));
 // tum ilaclari doner
 app.get('/api/ilaclar', (req, res) => {
   db.query(
-    'Select * From ILAC',
+    'Select ilacAdi,Mg From ILAC;',
   ).then((data) => {
     res.json(data[0]);
   });
 });
 
-// ilacid'si verilen ilaci doner
+// TCNo verilen kullanicinin id'si verilen ilacin gerekli bilgilerini doner
 app.get('/kullandigim', (req, res) => {
   const { ilacid, tcno } = req.query;
-  db.query(`select * from ILAC as I inner join KULLANIR as KU on I.ilacid = KU.ilacid left join YAZAR as Y on Y.ilacid = I.ilacid where I.ilacid = '${ilacid}' and KU.tcno = '${tcno}'`).then((data) => {
+  db.query(`select I.prospektus,I.Ac_Tok,I.Mg,KU.siklik,Y.yazTarih 
+  from ILAC as I inner join KULLANIR as KU on I.ilacid = KU.ilacid left join YAZAR as Y on Y.ilacid = I.ilacid 
+  where I.ilacid = '${ilacid}' and KU.tcno = '${tcno}'`).then((data) => {
     res.json(data[0][0]);
   });
 });
@@ -35,29 +37,18 @@ app.get('/api/doktorlar', (req, res) => {
   const { hastaneid } = req.query;
   if (hastaneid === undefined) {
     db.query(
-      'Select * From DOKTOR',
+      'Select * From DOKTOR as D,KULLANICI as K where D.TCNo=K.TCNo;',
     ).then((data) => {
-      const rows = data[0];
-      const newRows = Promise.all(rows.map(async (row) => {
-        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          row.doktorad = data2[0][0].ad;
-        });
-        return row;
-      }));
-      newRows.then((a) => { res.json(a); });
+      res.json(data[0][0]);
     });
   } else {
     db.query(
-      `Select * From DOKTOR where HastaneId = '${hastaneid}'`,
+      `Select K.ad as doktorad, K.soyad as doktorsoyad, D.tcno 
+      From DOKTOR as D,KULLANICI as K 
+      where D.HastaneId = '${hastaneid}' and D.TCNo=K.TCNo;
+      `,
     ).then((data) => {
-      const rows = data[0];
-      const newRows = Promise.all(rows.map(async (row) => {
-        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          row.doktorad = data2[0].length !== 0 ? data2[0][0].ad : '';
-        });
-        return row;
-      }));
-      newRows.then((a) => { res.json(a); });
+      res.json(data[0][0]);
     });
   }
 });
@@ -65,7 +56,7 @@ app.get('/api/doktorlar', (req, res) => {
 // tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
-    'Select * From ASI',
+    'Select asiid,asiadi From ASI',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -74,7 +65,7 @@ app.get('/api/asilar', (req, res) => {
 // tum hastaneleri doner
 app.get('/api/hastaneler', (req, res) => {
   db.query(
-    'Select * From HASTANE',
+    'Select hastaneAd From HASTANE',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -84,7 +75,10 @@ app.get('/api/hastaneler', (req, res) => {
 app.get('/ilaclarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select * From KULLANICI as U, KULLANIR as K, ILAC as I Where U.TCNo='${tcno}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`,
+    `Select I.ilacAdi,I.mg,I.resim,I.prospektus,K.kullanmasayisi,K.siklik,U.tcno 
+    From KULLANICI as U, KULLANIR as K, ILAC as I 
+    Where U.TCNo='${tcno}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId
+    `,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -94,7 +88,9 @@ app.get('/ilaclarim', (req, res) => {
 app.get('/asilarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select * From KULLANICI as K, ASI as S, YAPTIRIR as Y Where K.TCNo = '${tcno}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
+    `Select S.asiadi,S.yapilmayasi,Y.yapilmatarihi,S.asiid 
+    From KULLANICI as K, ASI as S, YAPTIRIR as Y 
+    Where K.TCNo = '${tcno}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -104,23 +100,19 @@ app.get('/asilarim', (req, res) => {
 app.get('/randevularim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select * From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D Where K.TCNo = '${tcno}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`,
+    `Select K.ad ,DK.ad as DoktorAd, DK.soyad as DoktorSoyad, R.tarih, R.randevuAdi, H.HastaneAd, R.gitti_mi, R.saat, D.TCNo as DoktorTC 
+    From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D, KULLANICI as DK 
+    Where K.TCNo = '${tcno}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId and DK.TCNo= D.TCNo;`,
   ).then((data) => {
-    const rows = data[0];
-    const newRows = Promise.all(rows.map(async (row) => {
-      await db.query(`select ad from KULLANICI where TCNo = '${row.doktortc}'`).then((data2) => {
-        row.doktorad = data2[0][0].ad;
-      });
-      return row;
-    }));
-    newRows.then((a) => { res.json(a); });
+    res.json(data[0]);
   });
 });
 
 // body'de bilgileri veirlen randevuyu doner
 app.get('/randevu', (req, res) => {
   const { kullanicitc, doktortc, tarih, saat } = req.query;
-  db.query(`select * from RANDEVU where kullanicitc='${kullanicitc}' and doktortc='${doktortc}' and tarih='${tarih}' and saat='${saat}:00'`)
+  db.query(`select kullanicitc,doktortc,tarih,saat,randevuadi,gitti_mi 
+  from RANDEVU where kullanicitc='${kullanicitc}' and doktortc='${doktortc}' and tarih='${tarih}' and saat='${saat}:00'`)
     .then((data) => {
       res.json(data[0]);
     });
