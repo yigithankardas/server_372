@@ -19,6 +19,14 @@ app.get('/api/ilaclar', (req, res) => {
   });
 });
 
+// tum kullanicilari doner
+app.get('/api/kullanicilar', (req, res) => {
+  const { doktortc } = req.query;
+  db.query(`select tcno,ad,soyad from kullanici where tcno != '${doktortc}'`).then((data) => {
+    res.json(data[0]);
+  });
+});
+
 // TCNo verilen kullanicinin id'si verilen ilacin gerekli bilgilerini doner
 app.get('/kullandigim', (req, res) => {
   const { ilacid, tcno } = req.query;
@@ -88,7 +96,7 @@ app.get('/ilaclarim', (req, res) => {
 app.get('/asilarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `select S.asiadi, S.yapilmayasi, Y.yapilmatarihi, S.asiid 
+    `select S.asiadi, S.yapilmayasi, Y.yapilacagitarih, S.asiid, Y.yaptirdi_mi
     from KULLANICI as K, ASI as S, YAPTIRIR as Y 
     where K.tcno = '${tcno}' and K.tcno = Y.tcno and Y.asiid = S.asiid`,
   ).then((data) => {
@@ -151,32 +159,20 @@ app.put('/ilaclarim', (req, res) => {
   }
 });
 
-// Eger bodyde yapilma tarihi verilmediyse
-// Body'de tc si verilen kullaniciya asi'yi ekler
-// Eger bodyde yapilma tarihi verildiyse
-// Body'de tc si verilen kullanicinin kullandigi asinin yapilma tarihini gunceller
+// Body'de tcno, asiid ve yapilacagitarih bilgileri verilen YAPTIRIR tablosu entrysini yaptirdi_mi bilgisiyle gunceller.
 app.put('/asilarim', (req, res) => {
-  const { tcno, asiid, yapilmatarihi } = req.body;
-  if (yapilmatarihi === undefined) {
-    db.query(`insert into YAPTIRIR values('${tcno}','${asiid}',NULL)
-  `).then(
-      (data) => {
-        res.json(data[0]);
-      },
-    );
-  } else {
-    db.query(`update YAPTIRIR set yapilmatarihi='${yapilmatarihi}' from KULLANICI as U, ASI as A where U.tcno = '${tcno}' and U.tcno = YAPTIRIR.tcno and A.asiid = '${asiid}' and A.asiid = YAPTIRIR.asiid;
-`).then(
-      (data) => {
-        res.json(data[0]);
-      },
-    );
-  }
+  const { tcno, asiid, yapilacagitarih, yaptirdi_mi } = req.body;
+  db.query(`update YAPTIRIR set yaptirdi_mi = ${yaptirdi_mi} where tcno = '${tcno}' and asiid = '${asiid}' and yapilacagitarih = '${yapilacagitarih}'`).then(
+    (data) => {
+      res.json(data[0]);
+    },
+  );
 });
 
+// Body'de tc si verilen kullanicinin yaptirir tablosuna yeni asiyi ekler
 app.post('/asilarim', (req, res) => {
-  const { tcno, asiid, yapilmatarihi } = req.body;
-  db.query(`insert into YAPTIRIR values('${tcno}','${asiid}', '${yapilmatarihi}')
+  const { tcno, asiid, yapilacagitarih } = req.body;
+  db.query(`insert into YAPTIRIR values('${tcno}','${asiid}', '${yapilacagitarih}', 0)
   `).then(
     (data) => {
       res.json(data[0]);
