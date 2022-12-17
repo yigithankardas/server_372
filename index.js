@@ -53,6 +53,14 @@ app.get('/api/doktorlar', (req, res) => {
   }
 });
 
+// tum kullanicilari doner
+app.get('/api/kullanicilar', (req, res) => {
+  const { doktortc } = req.query;
+  db.query(`select tcno,ad,soyad from kullanici where tcno != '${doktortc}'`).then((data) => {
+    res.json(data[0]);
+  });
+});
+
 // tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
@@ -210,6 +218,13 @@ app.put('/randevularim', (req, res) => {
       },
     );
   }
+});
+
+app.put('/yazar', (req, res) => {
+  const { kullanicitc, doktortc, ilacid, yaztarih } = req.body;
+  db.query(`insert into YAZAR values('${kullanicitc}', '${doktortc}', '${ilacid}', '${yaztarih}')`).then((data) => {
+    res.json(data[0]);
+  });
 });
 
 // Eger Body'de sifre verilmediyse
