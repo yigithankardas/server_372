@@ -35,29 +35,15 @@ app.get('/api/doktorlar', (req, res) => {
   const { hastaneid } = req.query;
   if (hastaneid === undefined) {
     db.query(
-      'Select * From DOKTOR',
+      'Select * from DOKTOR as D, KULLANICI as K where D.tcno = K.tcno',
     ).then((data) => {
-      const rows = data[0];
-      const newRows = Promise.all(rows.map(async (row) => {
-        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          row.doktorad = data2[0][0].ad;
-        });
-        return row;
-      }));
-      newRows.then((a) => { res.json(a); });
+      res.json(data[0][0]);
     });
   } else {
     db.query(
-      `Select * From DOKTOR where HastaneId = '${hastaneid}'`,
+      `select * from DOKTOR as D, KULLANICI as K where D.hastaneid = '${hastaneid}' and D.tcno = K.tcno`,
     ).then((data) => {
-      const rows = data[0];
-      const newRows = Promise.all(rows.map(async (row) => {
-        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          row.doktorad = data2[0].length !== 0 ? data2[0][0].ad : '';
-        });
-        return row;
-      }));
-      newRows.then((a) => { res.json(a); });
+      res.json(data[0][0]);
     });
   }
 });
@@ -279,7 +265,14 @@ app.post('/login', (req, res) => {
       const [result] = data[0];
       if (result !== undefined) {
         const token = jwt.sign({ TCNo, Sifre }, 'secretkey');
-        res.json({ ...result, token });
+        const userObject = { ...result, token, doktor_mu: false };
+        db.query(`select * from DOKTOR where tcno='${result.tcno}'`).then((data2) => {
+          const [result2] = data2[0];
+          if (result2 !== undefined) {
+            userObject.doktor_mu = true;
+          }
+          res.json(userObject);
+        });
       } else {
         res.status(404).json();
       }
