@@ -13,7 +13,7 @@ app.use(bp.urlencoded({ extended: true }));
 // tum ilaclari doner
 app.get('/api/ilaclar', (req, res) => {
   db.query(
-    'Select ilacAdi,Mg From ILAC;',
+    'select ilacadi, mg, ilacid from ILAC',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -22,7 +22,7 @@ app.get('/api/ilaclar', (req, res) => {
 // TCNo verilen kullanicinin id'si verilen ilacin gerekli bilgilerini doner
 app.get('/kullandigim', (req, res) => {
   const { ilacid, tcno } = req.query;
-  db.query(`select I.prospektus,I.Ac_Tok,I.Mg,KU.siklik,Y.yazTarih 
+  db.query(`select I.prospektus, I.ac_tok, I.mg, KU.siklik, Y.yaztarih 
   from ILAC as I inner join KULLANIR as KU on I.ilacid = KU.ilacid left join YAZAR as Y on Y.ilacid = I.ilacid 
   where I.ilacid = '${ilacid}' and KU.tcno = '${tcno}'`).then((data) => {
     res.json(data[0][0]);
@@ -37,18 +37,18 @@ app.get('/api/doktorlar', (req, res) => {
   const { hastaneid } = req.query;
   if (hastaneid === undefined) {
     db.query(
-      'Select * from DOKTOR as D, KULLANICI as K where D.tcno = K.tcno',
+      'select * from DOKTOR as D, KULLANICI as K where D.tcno = K.tcno',
     ).then((data) => {
-      res.json(data[0][0]);
+      res.json(data[0]);
     });
   } else {
     db.query(
-      `Select K.ad as doktorad, K.soyad as doktorsoyad, D.tcno 
+      `select K.ad as doktorad, K.soyad as doktorsoyad, D.tcno 
       From DOKTOR as D,KULLANICI as K 
-      where D.HastaneId = '${hastaneid}' and D.TCNo=K.TCNo;
+      where D.hastaneid = '${hastaneid}' and D.tcno=K.tcno;
       `,
     ).then((data) => {
-      res.json(data[0][0]);
+      res.json(data[0]);
     });
   }
 });
@@ -56,7 +56,7 @@ app.get('/api/doktorlar', (req, res) => {
 // tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
-    'Select asiid,asiadi From ASI',
+    'select asiid, asiadi from ASI',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -65,7 +65,7 @@ app.get('/api/asilar', (req, res) => {
 // tum hastaneleri doner
 app.get('/api/hastaneler', (req, res) => {
   db.query(
-    'Select hastaneAd From HASTANE',
+    'select hastanead, hastaneid from HASTANE',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -75,9 +75,9 @@ app.get('/api/hastaneler', (req, res) => {
 app.get('/ilaclarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select I.ilacAdi,I.mg,I.resim,I.prospektus,K.kullanmasayisi,K.siklik,U.tcno 
-    From KULLANICI as U, KULLANIR as K, ILAC as I 
-    Where U.TCNo='${tcno}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId
+    `select I.ilacadi, I.mg, I.resim, I.prospektus, K.kullanmasayisi, K.siklik, U.tcno, I.ilacid
+    from KULLANICI as U, KULLANIR as K, ILAC as I 
+    where U.tcno='${tcno}' and K.tcno = U.tcno and K.ilacid = I.ilacid
     `,
   ).then((data) => {
     res.json(data[0]);
@@ -88,9 +88,9 @@ app.get('/ilaclarim', (req, res) => {
 app.get('/asilarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select S.asiadi,S.yapilmayasi,Y.yapilmatarihi,S.asiid 
-    From KULLANICI as K, ASI as S, YAPTIRIR as Y 
-    Where K.TCNo = '${tcno}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
+    `select S.asiadi, S.yapilmayasi, Y.yapilmatarihi, S.asiid 
+    from KULLANICI as K, ASI as S, YAPTIRIR as Y 
+    where K.tcno = '${tcno}' and K.tcno = Y.tcno and Y.asiid = S.asiid`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -100,9 +100,9 @@ app.get('/asilarim', (req, res) => {
 app.get('/randevularim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select K.ad ,DK.ad as DoktorAd, DK.soyad as DoktorSoyad, R.tarih, R.randevuAdi, H.HastaneAd, R.gitti_mi, R.saat, D.TCNo as DoktorTC 
-    From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D, KULLANICI as DK 
-    Where K.TCNo = '${tcno}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId and DK.TCNo= D.TCNo;`,
+    `select K.ad, DK.ad as doktorad, DK.soyad as doktorsoyad, R.tarih, R.randevuadi, H.hastanead, R.gitti_mi, R.saat, D.tcno as doktortc 
+    from HASTANE as H, RANDEVU as R,KULLANICI as K, DOKTOR as D, KULLANICI as DK 
+    where K.tcno = '${tcno}' and K.tcno = R.kullanicitc and R.doktortc = D.tcno and D.hastaneid = H.hastaneid and DK.tcno= D.tcno`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -111,8 +111,8 @@ app.get('/randevularim', (req, res) => {
 // body'de bilgileri veirlen randevuyu doner
 app.get('/randevu', (req, res) => {
   const { kullanicitc, doktortc, tarih, saat } = req.query;
-  db.query(`select kullanicitc,doktortc,tarih,saat,randevuadi,gitti_mi 
-  from RANDEVU where kullanicitc='${kullanicitc}' and doktortc='${doktortc}' and tarih='${tarih}' and saat='${saat}:00'`)
+  db.query(`select kullanicitc, doktortc, tarih, saat, randevuadi, gitti_mi 
+  from RANDEVU where kullanicitc = '${kullanicitc}' and doktortc = '${doktortc}' and tarih = '${tarih}' and saat = '${saat}:00'`)
     .then((data) => {
       res.json(data[0]);
     });
@@ -121,7 +121,7 @@ app.get('/randevu', (req, res) => {
 // body'de TCsi verilen kullanicinin profil bilgilerini doner
 app.get('/profilim', (req, res) => {
   const { TCNo } = req.body;
-  db.query(`Select * From KULLANICI as K Where K.TCNo = '${TCNo}'`).then(
+  db.query(`select * from KULLANICI as K where K.tcno = '${TCNo}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -135,14 +135,14 @@ app.get('/profilim', (req, res) => {
 app.put('/ilaclarim', (req, res) => {
   const { tcno, ilacid, kullanmasayisi, siklik } = req.body;
   if (siklik === undefined) {
-    db.query(`Update KULLANIR Set KullanmaSayisi='${kullanmasayisi}' From KULLANICI as U, Ilac As I Where U.TCNo = '${tcno}' and U.TCNo = KULLANIR.TCNo and I.IlacId = '${ilacid}' and I.IlacId = KULLANIR.IlacId;
+    db.query(`update KULLANIR set kullanmasayisi='${kullanmasayisi}' from KULLANICI as U, ILAC as I where U.tcno = '${tcno}' and U.tcno = KULLANIR.tcno and I.ilacid = '${ilacid}' and I.ilacid = KULLANIR.ilacid
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Insert Into KULLANIR Values('${tcno}','${ilacid}','${siklik}',0);
+    db.query(`insert into KULLANIR values('${tcno}','${ilacid}','${siklik}',0)
   `).then(
       (data) => {
         res.json(data[0]);
@@ -158,14 +158,14 @@ app.put('/ilaclarim', (req, res) => {
 app.put('/asilarim', (req, res) => {
   const { tcno, asiid, yapilmatarihi } = req.body;
   if (yapilmatarihi === undefined) {
-    db.query(`INSERT INTO YAPTIRIR VALUES('${tcno}','${asiid}',NULL);
+    db.query(`insert into YAPTIRIR values('${tcno}','${asiid}',NULL)
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Update Yaptirir Set YapilmaTarihi='${yapilmatarihi}' From KULLANICI as U, ASI as A Where U.TCNo = '${tcno}' and U.TCNo = Yaptirir.TCNo and A.AsiId = '${asiid}' and A.AsiId = YAPTIRIR.AsiId;
+    db.query(`update YAPTIRIR set yapilmatarihi='${yapilmatarihi}' from KULLANICI as U, ASI as A where U.tcno = '${tcno}' and U.tcno = YAPTIRIR.tcno and A.asiid = '${asiid}' and A.asiid = YAPTIRIR.asiid;
 `).then(
       (data) => {
         res.json(data[0]);
@@ -176,7 +176,7 @@ app.put('/asilarim', (req, res) => {
 
 app.post('/asilarim', (req, res) => {
   const { tcno, asiid, yapilmatarihi } = req.body;
-  db.query(`INSERT INTO YAPTIRIR VALUES('${tcno}','${asiid}', '${yapilmatarihi}');
+  db.query(`insert into YAPTIRIR values('${tcno}','${asiid}', '${yapilmatarihi}')
   `).then(
     (data) => {
       res.json(data[0]);
@@ -192,7 +192,7 @@ app.put('/randevularim', (req, res) => {
   const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi, saat } = req.body;
   if (randevuismi === undefined) {
     db.query(`
-    Update RANDEVU Set gitti_mi='${gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.tcno = '${kullanicitc}' and U.tcno = RANDEVU.kullanicitc and D.TCNo = RANDEVU.doktortc and RANDEVU.tarih='${tarih}' and RANDEVU.saat='${saat}';
+    update RANDEVU set gitti_mi='${gitti_mi}' from KULLANICI as U, DOKTOR as D where U.tcno = '${kullanicitc}' and U.tcno = RANDEVU.kullanicitc and D.tcno = RANDEVU.doktortc and RANDEVU.tarih='${tarih}' and RANDEVU.saat='${saat}';
   `).then(
       (data) => {
         res.json(data[0]);
@@ -203,7 +203,7 @@ app.put('/randevularim', (req, res) => {
     const lastCharacterModified = (parseInt(modifiedTarih.charAt(modifiedTarih.length - 1), 10) + 1).toString();
     modifiedTarih = modifiedTarih.slice(0, modifiedTarih.length - 1) + lastCharacterModified;
     db.query(`
-    INSERT INTO RANDEVU VALUES('${kullanicitc}','${doktortc}','${randevuismi}',0,'${modifiedTarih}','${saat}');
+    insert into RANDEVU values('${kullanicitc}','${doktortc}','${randevuismi}',0,'${modifiedTarih}','${saat}')
     `).then(
       (data) => {
         res.json(data[0]);
@@ -220,13 +220,13 @@ app.put('/profilim', (req, res) => {
   const { TCNo, Ad, Soyad, DogumT, Adres, Cinsiyet, Boy, Kilo, Sifre } = req.body;
   console.log(`SIFRE: ${Sifre}`);
   if (Sifre === undefined) {
-    db.query(`Update KULLANICI Set Ad='${Ad}', Soyad='${Soyad}', DogumT='${DogumT}', Adres='${Adres}', Cinsiyet='${Cinsiyet}', Boy='${Boy}', Kilo='${Kilo}' Where TCNo='${TCNo}';`).then(
+    db.query(`update KULLANICI set ad='${Ad}', soyad='${Soyad}', dogumt='${DogumT}', adres='${Adres}', cinsiyet='${Cinsiyet}', boy='${Boy}', kilo='${Kilo}' where tcno='${TCNo}'`).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Update KULLANICI Set Sifre='${Sifre}' Where TCNo='${TCNo}';`).then(
+    db.query(`update KULLANICI set sifre='${Sifre}' where tcno='${TCNo}'`).then(
       (data) => {
         res.json(data[0]);
       },
@@ -266,7 +266,7 @@ app.delete('/randevularim', (req, res) => {
 
 app.post('/login', (req, res) => {
   const { TCNo, Sifre } = req.body;
-  db.query(`select * from Kullanici where TCNo='${TCNo}' and Sifre='${Sifre}'`)
+  db.query(`select * from KULLANICI where tcno='${TCNo}' and sifre='${Sifre}'`)
     .then((data) => {
       const [result] = data[0];
       if (result !== undefined) {
