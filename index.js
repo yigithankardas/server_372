@@ -180,7 +180,7 @@ app.put('/asilarim', (req, res) => {
 // Body'de tc si verilen kullanicinin yaptirir tablosuna yeni asiyi ekler
 app.post('/asilarim', (req, res) => {
   const { tcno, asiid, yapilacagitarih } = req.body;
-  db.query(`insert into YAPTIRIR values('${tcno}','${asiid}', '${yapilacagitarih}', 0)
+  db.query(`insert into YAPTIRIR values('${tcno}','${asiid}', '${new Date(yapilacagitarih).toJSON().slice(0, 10)}', 0)
   `).then(
     (data) => {
       res.json(data[0]);
@@ -203,11 +203,9 @@ app.put('/randevularim', (req, res) => {
       },
     );
   } else if (randevuismi !== '' && doktortc !== '' && tarih !== '' && saat !== '') {
-    let modifiedTarih = tarih.slice(0, 10);
-    const lastCharacterModified = (parseInt(modifiedTarih.charAt(modifiedTarih.length - 1), 10) + 1).toString();
-    modifiedTarih = modifiedTarih.slice(0, modifiedTarih.length - 1) + lastCharacterModified;
+    const tarih_tomorrow = new Date(new Date(tarih).getTime() + (24 * 60 * 60 * 1000)).toJSON().slice(0, 10);
     db.query(`
-    insert into RANDEVU values('${kullanicitc}','${doktortc}','${randevuismi}',0,'${modifiedTarih}','${saat}')
+    insert into RANDEVU values('${kullanicitc}','${doktortc}','${randevuismi}',0,'${tarih_tomorrow}','${saat}')
     `).then(
       (data) => {
         res.json(data[0]);
