@@ -1,6 +1,3 @@
-/* eslint-disable object-curly-newline */
-/* eslint-disable camelcase */
-
 const bp = require('body-parser');
 const express = require('express');
 const jwt = require('jsonwebtoken');
@@ -8,7 +5,7 @@ const db = require('./src/db');
 
 const app = express();
 
-// yigithan
+// oguz
 
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
@@ -16,9 +13,27 @@ app.use(bp.urlencoded({ extended: true }));
 // tum ilaclari doner
 app.get('/api/ilaclar', (req, res) => {
   db.query(
-    'Select * From ILAC',
+    'select ilacadi, mg, ilacid from ILAC order by ilacadi ASC',
   ).then((data) => {
     res.json(data[0]);
+  });
+});
+
+// tum kullanicilari doner
+app.get('/api/kullanicilar', (req, res) => {
+  const { doktortc } = req.query;
+  db.query(`select tcno,ad,soyad from kullanici where tcno != '${doktortc}' order by ad, soyad ASC`).then((data) => {
+    res.json(data[0]);
+  });
+});
+
+// TCNo verilen kullanicinin id'si verilen ilacin gerekli bilgilerini doner
+app.get('/kullandigim', (req, res) => {
+  const { ilacid, tcno } = req.query;
+  db.query(`select I.prospektus, I.ac_tok, I.mg, KU.siklik, Y.yaztarih, I.resim
+  from ILAC as I inner join KULLANIR as KU on I.ilacid = KU.ilacid left join YAZAR as Y on Y.ilacid = I.ilacid 
+  where I.ilacid = '${ilacid}' and KU.tcno = '${tcno}'`).then((data) => {
+    res.json(data[0][0]);
   });
 });
 
@@ -30,33 +45,18 @@ app.get('/api/doktorlar', (req, res) => {
   const { hastaneid } = req.query;
   if (hastaneid === undefined) {
     db.query(
-      'Select * From DOKTOR',
+      'select * from DOKTOR as D, KULLANICI as K where D.tcno = K.tcno',
     ).then((data) => {
-      const rows = data[0];
-      const newRows = Promise.all(rows.map(async (row) => {
-        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          /* eslint-disable prefer-destructuring */
-          /* eslint-disable no-param-reassign */
-          row.doktorad = data2[0][0].ad;
-        });
-        return row;
-      }));
-      newRows.then((a) => { res.json(a); });
+      res.json(data[0]);
     });
   } else {
     db.query(
-      `Select * From DOKTOR where HastaneId = '${hastaneid}'`,
+      `select K.ad as doktorad, K.soyad as doktorsoyad, D.tcno 
+      From DOKTOR as D,KULLANICI as K 
+      where D.hastaneid = '${hastaneid}' and D.tcno=K.tcno order by doktorad, doktorsoyad ASC;
+      `,
     ).then((data) => {
-      const rows = data[0];
-      const newRows = Promise.all(rows.map(async (row) => {
-        await db.query(`select ad from KULLANICI where TCNo = '${row.tcno}'`).then((data2) => {
-          /* eslint-disable prefer-destructuring */
-          /* eslint-disable no-param-reassign */
-          row.doktorad = data2[0].length !== 0 ? data2[0][0].ad : '';
-        });
-        return row;
-      }));
-      newRows.then((a) => { res.json(a); });
+      res.json(data[0]);
     });
   }
 });
@@ -64,7 +64,7 @@ app.get('/api/doktorlar', (req, res) => {
 // tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
-    'Select * From ASI',
+    'select asiid, asiadi from ASI order by asiadi ASC',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -73,7 +73,7 @@ app.get('/api/asilar', (req, res) => {
 // tum hastaneleri doner
 app.get('/api/hastaneler', (req, res) => {
   db.query(
-    'Select * From HASTANE',
+    'select hastanead, hastaneid from HASTANE order by hastanead ASC',
   ).then((data) => {
     res.json(data[0]);
   });
@@ -83,7 +83,10 @@ app.get('/api/hastaneler', (req, res) => {
 app.get('/ilaclarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select * From KULLANICI as U, KULLANIR as K, ILAC as I Where U.TCNo='${tcno}' and K.TCNo = U.TCNo and K.IlacId = I.IlacId`,
+    `select I.ilacadi, I.mg, I.resim, I.prospektus, K.kullanmasayisi, K.siklik, U.tcno, I.ilacid
+    from KULLANICI as U, KULLANIR as K, ILAC as I 
+    where U.tcno='${tcno}' and K.tcno = U.tcno and K.ilacid = I.ilacid
+    `,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -93,7 +96,9 @@ app.get('/ilaclarim', (req, res) => {
 app.get('/asilarim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select * From KULLANICI as K, ASI as S, YAPTIRIR as Y Where K.TCNo = '${tcno}' and K.TCNo = Y.TCNo and Y.AsiId = S.AsiId`,
+    `select S.asiadi, S.yapilmayasi, Y.yapilacagitarih, S.asiid, Y.yaptirdi_mi
+    from KULLANICI as K, ASI as S, YAPTIRIR as Y 
+    where K.tcno = '${tcno}' and K.tcno = Y.tcno and Y.asiid = S.asiid order by Y.yaptirdi_mi ASC`,
   ).then((data) => {
     res.json(data[0]);
   });
@@ -103,25 +108,28 @@ app.get('/asilarim', (req, res) => {
 app.get('/randevularim', (req, res) => {
   const { tcno } = req.query;
   db.query(
-    `Select * From HASTANE as H, RANDEVU as R,KULLANICI as K,DOKTOR as D Where K.TCNo = '${tcno}' and K.TCNo = R.KullaniciTc and R.DoktorTc = D.TCNo and D.HastaneId = H.HastaneId;`,
+    `select K.ad, DK.ad as doktorad, DK.soyad as doktorsoyad, R.tarih, R.randevuadi, H.hastanead, R.gitti_mi, R.saat, D.tcno as doktortc 
+    from HASTANE as H, RANDEVU as R,KULLANICI as K, DOKTOR as D, KULLANICI as DK 
+    where K.tcno = '${tcno}' and K.tcno = R.kullanicitc and R.doktortc = D.tcno and D.hastaneid = H.hastaneid and DK.tcno= D.tcno order by R.gitti_mi, R.tarih ASC`,
   ).then((data) => {
-    const rows = data[0];
-    const newRows = Promise.all(rows.map(async (row) => {
-      await db.query(`select ad from KULLANICI where TCNo = '${row.doktortc}'`).then((data2) => {
-      /* eslint-disable prefer-destructuring */
-      /* eslint-disable no-param-reassign */
-        row.doktorad = data2[0][0].ad;
-      });
-      return row;
-    }));
-    newRows.then((a) => { res.json(a); });
+    res.json(data[0]);
   });
+});
+
+// body'de bilgileri veirlen randevuyu doner
+app.get('/randevu', (req, res) => {
+  const { kullanicitc, doktortc, tarih, saat } = req.query;
+  db.query(`select kullanicitc, doktortc, tarih, saat, randevuadi, gitti_mi 
+  from RANDEVU where kullanicitc = '${kullanicitc}' and doktortc = '${doktortc}' and tarih = '${tarih}' and saat = '${saat}:00'`)
+    .then((data) => {
+      res.json(data[0]);
+    });
 });
 
 // body'de TCsi verilen kullanicinin profil bilgilerini doner
 app.get('/profilim', (req, res) => {
   const { TCNo } = req.body;
-  db.query(`Select * From KULLANICI as K Where K.TCNo = '${TCNo}'`).then(
+  db.query(`select * from KULLANICI as K where K.tcno = '${TCNo}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -135,14 +143,14 @@ app.get('/profilim', (req, res) => {
 app.put('/ilaclarim', (req, res) => {
   const { tcno, ilacid, kullanmasayisi, siklik } = req.body;
   if (siklik === undefined) {
-    db.query(`Update KULLANIR Set KullanmaSayisi='${kullanmasayisi}' From KULLANICI as U, Ilac As I Where U.TCNo = '${tcno}' and U.TCNo = KULLANIR.TCNo and I.IlacId = '${ilacid}' and I.IlacId = KULLANIR.IlacId;
+    db.query(`update KULLANIR set kullanmasayisi='${kullanmasayisi}' from KULLANICI as U, ILAC as I where U.tcno = '${tcno}' and U.tcno = KULLANIR.tcno and I.ilacid = '${ilacid}' and I.ilacid = KULLANIR.ilacid
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Insert Into KULLANIR Values('${tcno}','${ilacid}','${siklik}',0);
+    db.query(`insert into KULLANIR values('${tcno}','${ilacid}','${siklik}',0)
   `).then(
       (data) => {
         res.json(data[0]);
@@ -151,28 +159,25 @@ app.put('/ilaclarim', (req, res) => {
   }
 });
 
-// Eger bodyde yapilma tarihi verilmediyse
-// Body'de tc si verilen kullaniciya asi'yi ekler
-// Eger bodyde yapilma tarihi verildiyse
-// Body'de tc si verilen kullanicinin kullandigi asinin yapilma tarihini gunceller
+// Body'de tcno, asiid ve yapilacagitarih bilgileri verilen YAPTIRIR tablosu entrysini yaptirdi_mi bilgisiyle gunceller.
 app.put('/asilarim', (req, res) => {
-  const { tcno, asiid, YapilmaTarihi } = req.body;
+  const { tcno, asiid, yapilacagitarih, yaptirdi_mi } = req.body;
+  db.query(`update YAPTIRIR set yaptirdi_mi = ${yaptirdi_mi} where tcno = '${tcno}' and asiid = '${asiid}' and yapilacagitarih = '${yapilacagitarih}'`).then(
+    (data) => {
+      res.json(data[0]);
+    },
+  );
+});
 
-  if (YapilmaTarihi === undefined) {
-    db.query(`INSERT INTO YAPTIRIR VALUES('${tcno}','${asiid}',NULL);
+// Body'de tc si verilen kullanicinin yaptirir tablosuna yeni asiyi ekler
+app.post('/asilarim', (req, res) => {
+  const { tcno, asiid, yapilacagitarih } = req.body;
+  db.query(`insert into YAPTIRIR values('${tcno}','${asiid}', '${new Date(yapilacagitarih).toJSON().slice(0, 10)}', 0)
   `).then(
-      (data) => {
-        res.json(data[0]);
-      },
-    );
-  } else {
-    db.query(`Update Yaptirir Set YapilmaTarihi='${YapilmaTarihi}' From KULLANICI as U, ASI as A Where U.TCNo = '${tcno}' and U.TCNo = Yaptirir.TCNo and A.AsiId = '${asiid}' and A.AsiId = YAPTIRIR.AsiId;
-`).then(
-      (data) => {
-        res.json(data[0]);
-      },
-    );
-  }
+    (data) => {
+      res.json(data[0]);
+    },
+  );
 });
 
 // Eger bodyde RandevuIsmi yoksa
@@ -180,18 +185,19 @@ app.put('/asilarim', (req, res) => {
 // Eger bodyde RandevuIsmi varsa
 // Verilen TCler tarih ve Randevu ismi ile yeni Randevu olusturulur
 app.put('/randevularim', (req, res) => {
-  const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi } = req.body;
+  const { kullanicitc, doktortc, tarih, gitti_mi, randevuismi, saat } = req.body;
   if (randevuismi === undefined) {
     db.query(`
-    Update RANDEVU Set Gitti_mi='${gitti_mi}' From KULLANICI as U, DOKTOR As D Where U.TCNo = '${kullanicitc}' and U.TCNo = RANDEVU.KullaniciTc and D.TCNo = RANDEVU.DoktorTc and RANDEVU.Tarih='${tarih}';
+    update RANDEVU set gitti_mi='${gitti_mi}' from KULLANICI as U, DOKTOR as D where U.tcno = '${kullanicitc}' and U.tcno = RANDEVU.kullanicitc and D.tcno = RANDEVU.doktortc and RANDEVU.tarih='${tarih}' and RANDEVU.saat='${saat}';
   `).then(
       (data) => {
         res.json(data[0]);
       },
     );
-  } else if (randevuismi !== '' && doktortc !== '' && tarih !== '') {
+  } else if (randevuismi !== '' && doktortc !== '' && tarih !== '' && saat !== '') {
+    const tarih_tomorrow = new Date(new Date(tarih).getTime() + (24 * 60 * 60 * 1000)).toJSON().slice(0, 10);
     db.query(`
-    INSERT INTO RANDEVU VALUES('${kullanicitc}','${doktortc}','${randevuismi}',0,'${tarih}');
+    insert into RANDEVU values('${kullanicitc}','${doktortc}','${randevuismi}',0,'${tarih_tomorrow}','${saat}')
     `).then(
       (data) => {
         res.json(data[0]);
@@ -200,21 +206,27 @@ app.put('/randevularim', (req, res) => {
   }
 });
 
+app.put('/yazar', (req, res) => {
+  const { kullanicitc, doktortc, ilacid, yaztarih } = req.body;
+  db.query(`insert into YAZAR values('${kullanicitc}', '${doktortc}', '${ilacid}', '${yaztarih}')`).then((data) => {
+    res.json(data[0]);
+  });
+});
+
 // Eger Body'de sifre verilmediyse
 // Diger ozellikler bodydeki degerlerle guncellenir
 // Eger Body'de sifre verildiyse
 // Sifre Bodydeki deger ile guncellenir
 app.put('/profilim', (req, res) => {
   const { TCNo, Ad, Soyad, DogumT, Adres, Cinsiyet, Boy, Kilo, Sifre } = req.body;
-  console.log(`SIFRE: ${Sifre}`);
   if (Sifre === undefined) {
-    db.query(`Update KULLANICI Set Ad='${Ad}', Soyad='${Soyad}', DogumT='${DogumT}', Adres='${Adres}', Cinsiyet='${Cinsiyet}', Boy='${Boy}', Kilo='${Kilo}' Where TCNo='${TCNo}';`).then(
+    db.query(`update KULLANICI set ad='${Ad}', soyad='${Soyad}', dogumt='${DogumT}', adres='${Adres}', cinsiyet='${Cinsiyet}', boy='${Boy}', kilo='${Kilo}' where tcno='${TCNo}'`).then(
       (data) => {
         res.json(data[0]);
       },
     );
   } else {
-    db.query(`Update KULLANICI Set Sifre='${Sifre}' Where TCNo='${TCNo}';`).then(
+    db.query(`update KULLANICI set sifre='${Sifre}' where tcno='${TCNo}'`).then(
       (data) => {
         res.json(data[0]);
       },
@@ -224,8 +236,8 @@ app.put('/profilim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin ID'si verilen Ilaci silinir
 app.delete('/ilaclarim', (req, res) => {
-  const { TCNo, IlacId } = req.body;
-  db.query(`Delete From KULLANIR Where TCNo='${TCNo}' and IlacId='${IlacId}'`).then(
+  const { tcno, ilacid } = req.query;
+  db.query(`delete From KULLANIR where tcno='${tcno}' and ilacid='${ilacid}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -234,8 +246,8 @@ app.delete('/ilaclarim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin ID'si verilen asisi silinir
 app.delete('/asilarim', (req, res) => {
-  const { TCNo, asiid } = req.body;
-  db.query(`Delete From YAPTIRIR Where TCNo='${TCNo}' and AsiId='${asiid}'`).then(
+  const { tcno, asiid } = req.query;
+  db.query(`delete from YAPTIRIR where tcno='${tcno}' and asiid='${asiid}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -244,8 +256,8 @@ app.delete('/asilarim', (req, res) => {
 
 // Body'de TCsi verilen kullanicinin DoktorTC'si ve Tarihi verilen randevu silinir
 app.delete('/randevularim', (req, res) => {
-  const { KullaniciTc, DoktorTc, Tarih } = req.body;
-  db.query(`Delete From RANDEVU Where KullaniciTc='${KullaniciTc}' and DoktorTc='${DoktorTc}' and Tarih='${Tarih}'`).then(
+  const { kullanicitc, doktortc, tarih } = req.query;
+  db.query(`delete from RANDEVU where kullanicitc='${kullanicitc}' and doktortc='${doktortc}' and tarih='${tarih}'`).then(
     (data) => {
       res.json(data[0]);
     },
@@ -254,12 +266,20 @@ app.delete('/randevularim', (req, res) => {
 
 app.post('/login', (req, res) => {
   const { TCNo, Sifre } = req.body;
-  db.query(`select * from Kullanici where TCNo='${TCNo}' and Sifre='${Sifre}'`)
+  db.query(`select * from KULLANICI where tcno='${TCNo}' and sifre='${Sifre}'`)
     .then((data) => {
       const [result] = data[0];
       if (result !== undefined) {
         const token = jwt.sign({ TCNo, Sifre }, 'secretkey');
-        res.json({ ...result, token });
+        const userObject = { ...result, token, doktor_mu: false };
+        db.query(`select * from DOKTOR as D, HASTANE as H where D.tcno='${result.tcno}' and H.hastaneid = D.hastaneid`).then((data2) => {
+          const [result2] = data2[0];
+          if (result2 !== undefined) {
+            userObject.doktor_mu = true;
+            userObject.hastanead = result2.hastanead;
+          }
+          res.json(userObject);
+        });
       } else {
         res.status(404).json();
       }
