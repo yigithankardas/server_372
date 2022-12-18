@@ -61,14 +61,6 @@ app.get('/api/doktorlar', (req, res) => {
   }
 });
 
-// tum kullanicilari doner
-app.get('/api/kullanicilar', (req, res) => {
-  const { doktortc } = req.query;
-  db.query(`select tcno,ad,soyad from kullanici where tcno != '${doktortc}' order by ad, soyad ASC`).then((data) => {
-    res.json(data[0]);
-  });
-});
-
 // tum asilari doner
 app.get('/api/asilar', (req, res) => {
   db.query(
@@ -227,7 +219,6 @@ app.put('/yazar', (req, res) => {
 // Sifre Bodydeki deger ile guncellenir
 app.put('/profilim', (req, res) => {
   const { TCNo, Ad, Soyad, DogumT, Adres, Cinsiyet, Boy, Kilo, Sifre } = req.body;
-  console.log(`SIFRE: ${Sifre}`);
   if (Sifre === undefined) {
     db.query(`update KULLANICI set ad='${Ad}', soyad='${Soyad}', dogumt='${DogumT}', adres='${Adres}', cinsiyet='${Cinsiyet}', boy='${Boy}', kilo='${Kilo}' where tcno='${TCNo}'`).then(
       (data) => {
@@ -281,10 +272,11 @@ app.post('/login', (req, res) => {
       if (result !== undefined) {
         const token = jwt.sign({ TCNo, Sifre }, 'secretkey');
         const userObject = { ...result, token, doktor_mu: false };
-        db.query(`select * from DOKTOR where tcno='${result.tcno}'`).then((data2) => {
+        db.query(`select * from DOKTOR as D, HASTANE as H where D.tcno='${result.tcno}' and H.hastaneid = D.hastaneid`).then((data2) => {
           const [result2] = data2[0];
           if (result2 !== undefined) {
             userObject.doktor_mu = true;
+            userObject.hastanead = result2.hastanead;
           }
           res.json(userObject);
         });
